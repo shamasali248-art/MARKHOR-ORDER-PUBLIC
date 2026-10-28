@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#087e9b">
+<title>Markhor · Pedidos</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f7f8;color:#10252b}
+header{position:sticky;top:0;z-index:5;background:#087e9b;color:#fff;padding:14px 14px 12px;box-shadow:0 2px 10px #0002}
+.brand{display:flex;align-items:center;gap:10px} .logo{width:48px;height:48px;border-radius:14px;background:#ffd51b;color:#075d71;display:grid;place-items:center;font-weight:900;font-size:20px}
+h1{font-size:21px;margin:0} .sub{font-size:12px;opacity:.9}
+.search{margin-top:12px;width:100%;padding:12px 14px;border:0;border-radius:14px;font-size:15px}
+.tabs{display:flex;gap:7px;overflow:auto;padding:10px 12px;background:#fff;position:sticky;top:90px;z-index:4;border-bottom:1px solid #ddd}
+.tab{white-space:nowrap;border:1px solid #087e9b;background:white;color:#087e9b;border-radius:20px;padding:8px 12px;font-weight:700}
+.tab.active{background:#087e9b;color:white}
+main{padding:12px 12px 100px;max-width:800px;margin:auto}
+.section{margin:16px 0 8px;font-size:20px;font-weight:900;color:#087e9b}
+.card{background:white;border-radius:17px;padding:14px;margin:9px 0;box-shadow:0 2px 10px #0000000d;display:flex;justify-content:space-between;gap:12px}
+.name{font-weight:800;font-size:16px} .desc{font-size:12px;color:#65757a;margin-top:4px;line-height:1.35}
+.price{font-weight:900;color:#087e9b;margin-top:8px}
+.actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+select,.qty{padding:9px;border:1px solid #ccd7da;border-radius:10px;background:#fff}
+button{border:0;border-radius:11px;padding:10px 13px;font-weight:800;cursor:pointer}
+.add{background:#ffd51b;color:#17333a} .cartbar{position:fixed;bottom:14px;left:12px;right:12px;max-width:776px;margin:auto;background:#10252b;color:white;border-radius:17px;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 5px 25px #0004;z-index:10}
+.cartbar button{background:#ffd51b;color:#10252b}
+.modal{position:fixed;inset:0;background:#0007;z-index:20;display:none;align-items:flex-end}
+.modal.open{display:flex} .sheet{background:#fff;width:100%;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px;max-width:800px;margin:auto}
+.row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #eee}
+input,textarea{width:100%;padding:12px;border:1px solid #ccd7da;border-radius:11px;margin:5px 0 10px;font:inherit}
+.total{font-size:20px;font-weight:900;margin:14px 0}
+.primary{background:#087e9b;color:#fff;width:100%;padding:14px}
+.secondary{background:#e9f0f2;width:100%;padding:12px;margin-top:8px}
+.small{font-size:12px;color:#68777b}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="logo">M</div><div><h1>MARKHOR</h1><div class="sub">Tacos · Pizzeria · Kebab · Llíria</div></div></div>
+ <input id="search" class="search" placeholder="Buscar kebab, pizza, taco...">
+</header>
+<nav id="tabs" class="tabs"></nav>
+<main id="menu"></main>
+<div class="cartbar"><div><b id="count">0</b> productos · <b id="barTotal">0.00 €</b></div><button onclick="openCart()">Ver pedido 🛒</button></div>
+
+<div id="modal" class="modal">
+ <div class="sheet">
+  <h2>Tu pedido</h2>
+  <div id="cartItems"></div>
+  <div class="total">Total: <span id="total">0.00 €</span></div>
+  <hr>
+  <h3>Datos del pedido</h3>
+  <label>Nombre</label><input id="customer" placeholder="Tu nombre">
+  <label>Teléfono</label><input id="phone" placeholder="Tu teléfono">
+  <label>Dirección de entrega</label><textarea id="address" rows="2" placeholder="Calle, número, piso..."></textarea>
+  <label>Tipo</label>
+  <select id="type" style="width:100%;margin:5px 0 10px"><option>Entrega a domicilio</option><option>Recoger en local</option></select>
+  <label>Pago</label>
+  <select id="payment" style="width:100%;margin:5px 0 10px"><option>Efectivo</option><option>Tarjeta al recibir</option></select>
+  <div class="small">Servicio a domicilio dentro de Llíria · pedido mínimo 10 €.</div>
+  <button class="primary" onclick="sendOrder()">Enviar pedido por WhatsApp</button>
+  <button class="secondary" onclick="closeCart()">Seguir comprando</button>
+ </div>
+</div>
+
+<script>
+const products = [{"id": "k1", "cat": "Doner Kebab", "name": "Doner Normal (Ternera)", "desc": "Pan, lechuga, col, cebolla, tomate, carne de ternera y salsa", "prices": {"Normal": 5.0, "Grande": 6.5}}, {"id": "k2", "cat": "Doner Kebab", "name": "Doner Solo Carne (Ternera)", "desc": "Pan, carne de ternera y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k3", "cat": "Doner Kebab", "name": "Doner Especial (Ternera)", "desc": "Solo carne con patata fritas, queso y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k4", "cat": "Doner Kebab", "name": "Falafel", "desc": "Pan, lechuga, col, tomate, cebolla, falafel y salsa", "prices": {"Normal": 5.0, "Grande": 6.0}}, {"id": "k5", "cat": "Doner Kebab", "name": "Doner con Queso (Ternera)", "desc": "Pan, lechuga, col, cebolla, tomate, queso, carne y salsa", "prices": {"Normal": 6.0, "Grande": 7.0}}, {"id": "k6", "cat": "Doner Kebab", "name": "Doner con patatas en plato", "desc": "Lechuga, col, cebolla, tomate, carne, patatas fritas y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k7", "cat": "Doner Kebab", "name": "Plato solo carne con patatas", "desc": "Carne asada, patatas fritas y salsa", "prices": {"Normal": 9.0, "Grande": 10.0}}, {"id": "k8", "cat": "Pollo Kebab", "name": "Doner Pollo", "desc": "Pan, lechuga, col, cebolla, tomate, carne de pollo y salsa", "prices": {"Normal": 5.0, "Grande": 6.5}}, {"id": "k9", "cat": "Pollo Kebab", "name": "Doner Solo Carne (Pollo)", "desc": "Pan, carne de pollo y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k10", "cat": "Pollo Kebab", "name": "Doner Especial (Pollo)", "desc": "Solo carne con patata fritas, queso y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k11", "cat": "Pollo Kebab", "name": "Doner con Queso (Pollo)", "desc": "Pan, lechuga, col, cebolla, tomate, queso, carne y salsa", "prices": {"Normal": 6.0, "Grande": 7.0}}, {"id": "k12", "cat": "Pollo Kebab", "name": "Doner con patatas en plato (Pollo)", "desc": "Lechuga, col, cebolla, tomate, pollo, patatas fritas y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k13", "cat": "Pollo Kebab", "name": "Plato solo carne (Pollo)", "desc": "Carne de pollo, patatas fritas y salsa", "prices": {"Normal": 9.0, "Grande": 10.0}}, {"id": "k14", "cat": "Kebab Mixto", "name": "Mixto Normal", "desc": "Pan, lechuga, col, cebolla, tomate, carne mixta y salsa", "prices": {"Normal": 5.0, "Grande": 6.5}}, {"id": "k15", "cat": "Kebab Mixto", "name": "Mixto Solo Carne", "desc": "Pan, carne mixta y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k16", "cat": "Kebab Mixto", "name": "Mixto Especial", "desc": "Solo carne mixta con patata fritas, queso y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k17", "cat": "Kebab Mixto", "name": "Mixto con Queso", "desc": "Pan, lechuga, col, cebolla, tomate, queso, carne mixta y salsa", "prices": {"Normal": 6.0, "Grande": 7.0}}, {"id": "k18", "cat": "Kebab Mixto", "name": "Mixto con patatas en plato", "desc": "Lechuga, col, cebolla, tomate, carne mixta, patatas fritas y salsa", "prices": {"Normal": 6.5, "Grande": 7.5}}, {"id": "k19", "cat": "Kebab Mixto", "name": "Plato solo carne (Mixto)", "desc": "Carne mixta, patatas fritas y salsa", "prices": {"Normal": 9.0, "Grande": 10.0}}, {"id": "t1", "cat": "Taco Frances", "name": "Taco M", "desc": "Elige carne, relleno y 2 salsas", "prices": {"Único": 5.0}}, {"id": "t2", "cat": "Taco Frances", "name": "Taco L", "desc": "Elige carne, relleno y 2 salsas", "prices": {"Único": 6.5}}, {"id": "t3", "cat": "Taco Frances", "name": "Taco XL", "desc": "Elige carne, relleno y 2 salsas", "prices": {"Único": 8.5}}, {"id": "p1", "cat": "Pizzas", "name": "Margarita", "desc": "Tomate, mozzarella y oregano", "prices": {"Normal": 6.5, "Mediana": 8.5, "Familiar": 13.0}}, {"id": "p2", "cat": "Pizzas", "name": "Salami", "desc": "Tomate, mozzarella, oregano y salami", "prices": {"Normal": 6.5, "Mediana": 8.5, "Familiar": 13.0}}, {"id": "p3", "cat": "Pizzas", "name": "Bacon de Pavo", "desc": "Tomate, mozzarella, oregano y bacon de pavo", "prices": {"Normal": 6.5, "Mediana": 8.5, "Familiar": 13.0}}, {"id": "p4", "cat": "Pizzas", "name": "Jamon de Pavo", "desc": "Tomate, mozzarella, oregano y jamon de pavo", "prices": {"Normal": 6.5, "Mediana": 8.5, "Familiar": 13.0}}, {"id": "p5", "cat": "Pizzas", "name": "Pizza Sony", "desc": "Tomate, mozzarella, oregano, salami y jamon", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p6", "cat": "Pizzas", "name": "Pizza Roma", "desc": "Tomate, mozzarella, oregano, salami, jamon y champinones", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p7", "cat": "Pizzas", "name": "Sorrento", "desc": "Tomate, mozzarella, oregano, bacon y jamon", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p8", "cat": "Pizzas", "name": "Doner Pizza", "desc": "Tomate, mozzarella, oregano, carne asada y ajo", "prices": {"Normal": 7.0, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p9", "cat": "Pizzas", "name": "Pollo Pizza", "desc": "Salsa barbacoa, mozzarella, oregano, pollo y cebolla", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p10", "cat": "Pizzas", "name": "Napoli Pizza", "desc": "Tomate, mozzarella, oregano, jamon, champinon y cebolla", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p11", "cat": "Pizzas", "name": "Barbacoa I", "desc": "Salsa barbacoa, mozzarella, ternera, cebolla, bacon y maiz", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p12", "cat": "Pizzas", "name": "Barbacoa II Pollo", "desc": "Salsa barbacoa, mozzarella, pollo, cebolla, bacon y maiz", "prices": {"Normal": 7.0, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p13", "cat": "Pizzas", "name": "Barbacoa III", "desc": "Salsa barbacoa, mozzarella, queso, pollo, cordero y huevo", "prices": {"Normal": 7.0, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p14", "cat": "Pizzas", "name": "Barbacoa Especial", "desc": "Salsa barbacoa, mozzarella, queso, jamon, bacon, cebolla y huevo", "prices": {"Normal": 7.0, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p15", "cat": "Pizzas", "name": "Estaciones 4", "desc": "Tomate, mozzarella, oregano, salami, jamon, champinon, pimiento y huevo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p16", "cat": "Pizzas", "name": "Quesos 4", "desc": "Tomate, mozzarella y 4 quesos especiales", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p17", "cat": "Pizzas", "name": "Mixta", "desc": "Tomate, mozzarella, oregano, atun, jamon, champinon, salami y aceitunas negras", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p18", "cat": "Pizzas", "name": "Primavera", "desc": "Tomate, mozzarella, oregano, champinon, alcachofa, atun y pimiento", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p19", "cat": "Pizzas", "name": "Vegetal", "desc": "Tomate, mozzarella, oregano, champinon, pimiento, aceitunas, ajo, cebolla y alcachofas", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p20", "cat": "Pizzas", "name": "Miramare", "desc": "Tomate, mozzarella, oregano, salami, jamon, champinon, cebolla y ajo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p21", "cat": "Pizzas", "name": "Atun", "desc": "Tomate, mozzarella, oregano, atun, cebolla y ajo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p22", "cat": "Pizzas", "name": "Hawaina", "desc": "Tomate, mozzarella, oregano, jamon de pavo y pina", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p23", "cat": "Pizzas", "name": "Hawaina BBQ", "desc": "Salsa barbacoa, mozzarella, carne asada, jamon de pavo y pina", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p24", "cat": "Pizzas", "name": "Parma", "desc": "Tomate, mozzarella, oregano, jamon y bacon, pimiento, alcachofa y huevo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p25", "cat": "Pizzas", "name": "Pollo con patatas fritas", "desc": "Tomate, mozzarella, oregano, carne de pollo con patatas fritas", "prices": {"Normal": 7.0, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p26", "cat": "Pizzas", "name": "Americana", "desc": "Tomate, mozzarella, oregano, carne de pollo con patatas fritas, cebolla y huevo", "prices": {"Normal": 7.0, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p27", "cat": "Pizzas", "name": "Delux", "desc": "Tomate, mozzarella, oregano, bacon, jamon y huevo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p28", "cat": "Pizzas", "name": "Gamba", "desc": "Tomate, mozzarella, oregano, atun, cebolla, gamba y ajo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p29", "cat": "Pizzas", "name": "Carbonara", "desc": "Nata, mozzarella, oregano, bacon, champinon y huevo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p30", "cat": "Pizzas", "name": "De Le Casa", "desc": "Tomate, mozzarella, oregano, kebab pollo y ternera, champinon y huevo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p31", "cat": "Pizzas", "name": "Chicken Tikka", "desc": "Tomate, mozzarella, oregano, carne pollo con curry, champinon, cebolla, aceituna", "prices": {"Normal": 7.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p32", "cat": "Pizzas", "name": "Italiana", "desc": "Tomate, mozzarella, oregano, jamon de pavo y champinon", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p33", "cat": "Pizzas", "name": "Valenciana", "desc": "Tomate, mozzarella, oregano, jamon, carne de pollo y huevo", "prices": {"Normal": 6.5, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "p34", "cat": "Pizzas", "name": "A tu manera", "desc": "Tomate, mozzarella, oregano + elige 3 ingredientes", "prices": {"Normal": 7.0, "Mediana": 9.0, "Familiar": 14.0}}, {"id": "o1", "cat": "Hamburguesas", "name": "Hamburguesa Normal", "desc": "Pollo o ternera + patatas", "prices": {"Único": 4.5}}, {"id": "o2", "cat": "Hamburguesas", "name": "Hamburguesa con Queso", "desc": "Pollo o ternera + patatas", "prices": {"Único": 5.0}}, {"id": "o3", "cat": "Hamburguesas", "name": "Pollo Hamburguesa", "desc": "Pollo + patatas", "prices": {"Único": 4.5}}, {"id": "o4", "cat": "Hamburguesas", "name": "Pollo Hamburguesa con Queso", "desc": "Pollo + queso + patatas", "prices": {"Único": 5.0}}, {"id": "o5", "cat": "Hamburguesas", "name": "Hamburguesa Normal + Queso con huevo frito", "desc": "Hamburguesa con queso y huevo", "prices": {"Único": 6.0}}, {"id": "o6", "cat": "Box", "name": "Box Normal", "desc": "Patata y ensalada", "prices": {"Único": 4.0}}, {"id": "o7", "cat": "Box", "name": "Box Grande", "desc": "Patata y ensalada", "prices": {"Único": 5.0}}, {"id": "o8", "cat": "Box", "name": "Patata Gratinada", "desc": "Con carne de kebab al horno", "prices": {"Único": 7.0}}, {"id": "o9", "cat": "Ensaladas", "name": "Ensalada Mixta", "desc": "Lechuga, tomate, cebolla y aceitunas", "prices": {"Único": 5.0}}, {"id": "o10", "cat": "Ensaladas", "name": "Ensalada Griega", "desc": "Lechuga, tomate, queso feta, pepino, cebolla y aceitunas", "prices": {"Único": 6.0}}, {"id": "o11", "cat": "Ensaladas", "name": "Ensalada de Atun", "desc": "Lechuga, tomate, maiz, pepino, cebolla y aceitunas", "prices": {"Único": 6.0}}, {"id": "o12", "cat": "Tapas", "name": "Samosa", "desc": "Empanadilla relleno de verdura y salsa", "prices": {"Único": 2.5}}, {"id": "o13", "cat": "Tapas", "name": "Arroz de Cebolla UND 8", "desc": "8 unidades", "prices": {"Único": 2.5}}, {"id": "o14", "cat": "Tapas", "name": "Calamares a la Romana", "desc": "", "prices": {"Único": 5.0}}, {"id": "o15", "cat": "Tapas", "name": "Alitas de Pollo con Patata Fritas", "desc": "5 unidades", "prices": {"Único": 5.5}}, {"id": "o16", "cat": "Tapas", "name": "Rabas de Calamar", "desc": "", "prices": {"Único": 6.0}}, {"id": "o17", "cat": "Tapas", "name": "Nuggets de Pollo con Patatas", "desc": "6 unidades", "prices": {"Único": 5.0}}, {"id": "o18", "cat": "Tapas", "name": "Jalapeños con Patatas", "desc": "4 unidades", "prices": {"Único": 5.0}}, {"id": "o19", "cat": "Tapas", "name": "Fingers de Pollo con Patatas", "desc": "3 unidades", "prices": {"Único": 5.5}}, {"id": "o20", "cat": "Tapas", "name": "Camembert", "desc": "", "prices": {"Único": 4.0}}, {"id": "o21", "cat": "Tapas", "name": "Fingers de Queso con Patatas", "desc": "5 unidades", "prices": {"Único": 5.0}}, {"id": "o22", "cat": "Tapas", "name": "Falafel en Bandeja", "desc": "Con patatas deluxe y salsa", "prices": {"Único": 6.0}}, {"id": "o23", "cat": "Tapas", "name": "Patatas Bravas", "desc": "", "prices": {"Único": 3.5}}, {"id": "o24", "cat": "Tapas", "name": "Patatas Fritas", "desc": "", "prices": {"Único": 3.0}}, {"id": "o25", "cat": "Tapas", "name": "Patatas Especial de la Casa", "desc": "Bacon y queso al horno", "prices": {"Único": 6.0}}, {"id": "o26", "cat": "Tapas", "name": "Patatas Barbacoa", "desc": "Con carne de pollo, queso al horno", "prices": {"Único": 6.0}}, {"id": "o27", "cat": "Tapas", "name": "Patatas Deluxe", "desc": "", "prices": {"Único": 3.5}}, {"id": "o28", "cat": "Pizza Turca", "name": "Pizza Turca", "desc": "Carne de ternera y pollo con ensalada con salsa", "prices": {"Único": 7.5}}, {"id": "o29", "cat": "Bebidas", "name": "Zumos, Cola, Fanta 33cl", "desc": "", "prices": {"Único": 1.7}}, {"id": "o30", "cat": "Bebidas", "name": "Hawai, Pom, Mango", "desc": "", "prices": {"Único": 2.0}}, {"id": "o31", "cat": "Bebidas", "name": "Agua Pequeña 50cl", "desc": "", "prices": {"Único": 1.0}}, {"id": "o32", "cat": "Bebidas", "name": "Coca-Cola, Fanta, Sprite 2L", "desc": "", "prices": {"Único": 3.5}}, {"id": "o33", "cat": "Bebidas", "name": "Monster (Verde, Mango)", "desc": "", "prices": {"Único": 2.5}}, {"id": "o34", "cat": "Bebidas", "name": "Agua Grande 1.5L", "desc": "", "prices": {"Único": 1.5}}];
+let cart = JSON.parse(localStorage.getItem('markhor_cart')||'[]');
+const cats = [...new Set(products.map(p=>p.cat))];
+
+function money(n){return n.toFixed(2)+' €'}
+function save(){localStorage.setItem('markhor_cart',JSON.stringify(cart)); renderCartBar();}
+function priceOptions(p){return Object.entries(p.prices).map(([k,v])=>`<option value="${k}" data-price="${v}">${k} · ${money(v)}</option>`).join('')}
+function renderTabs(){
+ document.getElementById('tabs').innerHTML=cats.map((c,i)=>`<button class="tab ${i===0?'active':''}" onclick="showCat('${c}',this)">${c}</button>`).join('');
+}
+function showCat(cat,btn){
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); if(btn)btn.classList.add('active');
+ renderMenu(cat);
+}
+function renderMenu(filter=null){
+ const q=document.getElementById('search').value.toLowerCase();
+ const shown=products.filter(p=>(!filter||p.cat===filter)&&((p.name+' '+p.desc).toLowerCase().includes(q)));
+ let last='';
+ document.getElementById('menu').innerHTML=shown.map(p=>{
+   const same=p.cat!==last; last=p.cat;
+   return `${same?`<div class="section">${p.cat}</div>`:''}
+   <div class="card">
+    <div style="flex:1"><div class="name">${p.name}</div><div class="desc">${p.desc}</div></div>
+    <div class="actions">
+      <select id="opt-${p.id}">${priceOptions(p)}</select>
+      <button class="add" onclick="add('${p.id}')">Añadir</button>
+    </div>
+   </div>`;
+ }).join('') || '<p>No se encontraron productos.</p>';
+}
+function add(id){
+ const p=products.find(x=>x.id===id); const sel=document.getElementById('opt-'+id);
+ const size=sel.value; const price=Number(sel.selectedOptions[0].dataset.price);
+ const key=id+'|'+size; const old=cart.find(x=>x.key===key);
+ if(old) old.qty++; else cart.push({key,id,size,price,qty:1});
+ save();
+}
+function renderCartBar(){
+ const n=cart.reduce((a,x)=>a+x.qty,0), t=cart.reduce((a,x)=>a+x.qty*x.price,0);
+ document.getElementById('count').textContent=n; document.getElementById('barTotal').textContent=money(t);
+}
+function openCart(){
+ const el=document.getElementById('cartItems');
+ el.innerHTML=cart.length?cart.map((x,i)=>{
+   const p=products.find(p=>p.id===x.id);
+   return `<div class="row"><div><b>${p.name}</b><div class="small">${x.size} · ${money(x.price)}</div></div><div><button onclick="chg(${i},-1)">−</button> ${x.qty} <button onclick="chg(${i},1)">+</button></div></div>`;
+ }).join(''):'<p>Tu carrito está vacío.</p>';
+ const t=cart.reduce((a,x)=>a+x.qty*x.price,0); document.getElementById('total').textContent=money(t);
+ document.getElementById('modal').classList.add('open');
+}
+function closeCart(){document.getElementById('modal').classList.remove('open')}
+function chg(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);save();openCart()}
+function sendOrder(){
+ if(!cart.length) return alert('Añade algún producto.');
+ const total=cart.reduce((a,x)=>a+x.qty*x.price,0);
+ if(total<10) return alert('El pedido mínimo a domicilio es 10 €.');
+ const name=document.getElementById('customer').value.trim();
+ const phone=document.getElementById('phone').value.trim();
+ const address=document.getElementById('address').value.trim();
+ const type=document.getElementById('type').value;
+ const payment=document.getElementById('payment').value;
+ if(!name||!phone) return alert('Escribe tu nombre y teléfono.');
+ if(type==='Entrega a domicilio'&&!address) return alert('Escribe la dirección de entrega.');
+ const lines=cart.map(x=>{const p=products.find(p=>p.id===x.id);return `• ${x.qty}x ${p.name} (${x.size}) = ${money(x.qty*x.price)}`;}).join('%0A');
+ const msg=`*NUEVO PEDIDO - MARKHOR*%0A%0A${lines}%0A%0A*Total: ${money(total)}*%0ANombre: ${name}%0ATeléfono: ${phone}%0ATipo: ${type}%0ADirección: ${address||'-'}%0APago: ${payment}`;
+ window.open('https://wa.me/34614809001?text='+msg,'_blank');
+}
+document.getElementById('search').addEventListener('input',()=>renderMenu());
+renderTabs(); renderMenu(cats[0]); renderCartBar();
+</script>
+</body>
+</html>
