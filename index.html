@@ -57,6 +57,11 @@ input,textarea{width:100%;padding:12px;border:1px solid #ccd7da;border-radius:11
   <label>Tipo</label>
   <select id="type" style="width:100%;margin:5px 0 10px"><option>Entrega a domicilio</option><option>Recoger en local</option></select>
   <label>Pago</label>
+  <label>Zona de entrega</label>
+<select id="zone" style="width:100%;margin:5px 0 10px">
+<option value="2">Dentro de Llíria - 2€</option>
+<option value="4">Fuera de zona - 4€</option>
+</select>
   <select id="payment" style="width:100%;margin:5px 0 10px"><option>Efectivo</option><option>Tarjeta al recibir</option></select>
   <div class="small">Servicio a domicilio dentro de Llíria · pedido mínimo 10 €.</div>
   <button class="primary" onclick="sendOrder()">Enviar pedido por WhatsApp</button>
@@ -126,10 +131,11 @@ function sendOrder(){
  const address=document.getElementById('address').value.trim();
  const type=document.getElementById('type').value;
  const payment=document.getElementById('payment').value;
- if(!name||!phone) return alert('Escribe tu nombre y teléfono.');
+ if(!name||!phone) return alert('Escribe tu nombre y teléfono.');const delivery = type === 'Entrega a domicilio' ? Number(document.getElementById('zone').value) : 0;
+const finalTotal = total + delivery;
  if(type==='Entrega a domicilio'&&!address) return alert('Escribe la dirección de entrega.');
  const lines=cart.map(x=>{const p=products.find(p=>p.id===x.id);return `• ${x.qty}x ${p.name} (${x.size}) = ${money(x.qty*x.price)}`;}).join('%0A');
- const msg=`*NUEVO PEDIDO - MARKHOR*%0A%0A${lines}%0A%0A*Total: ${money(total)}*%0ANombre: ${name}%0ATeléfono: ${phone}%0ATipo: ${type}%0ADirección: ${address||'-'}%0APago: ${payment}`;
+ const msg=`*NUEVO PEDIDO - MARKHOR*%0A%0A${lines}%0A%0A*Total: ${money(finalTotal)}*%0ANombre: ${name}%0ATeléfono: ${phone}%0ATipo: ${type}%0ADirección: ${address||'-'}%0APago: ${payment}`;
  window.open('https://wa.me/34614809001?text='+msg,'_blank');
 }
 document.getElementById('search').addEventListener('input',()=>renderMenu());
