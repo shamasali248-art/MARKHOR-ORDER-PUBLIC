@@ -131,8 +131,7 @@ function sendOrder(){
  const address=document.getElementById('address').value.trim();
  const type=document.getElementById('type').value;
  const payment=document.getElementById('payment').value;
- if(!name||!phone) return alert('Escribe tu nombre y teléfono.');const delivery = type === 'Entrega a domicilio' ? Number(document.getElementById('zone').value) : 0;
-const finalTotal = total + delivery;
+const delivery = document.getElementById("type").selectedIndex === 0 ? Number(document.getElementById("zone").value) : 0;const finalTotal = total + delivery;
  if(type==='Entrega a domicilio'&&!address) return alert('Escribe la dirección de entrega.');
  const lines=cart.map(x=>{const p=products.find(p=>p.id===x.id);return `• ${x.qty}x ${p.name} (${x.size}) = ${money(x.qty*x.price)}`;}).join('%0A');
  const msg=`*NUEVO PEDIDO - MARKHOR*%0A%0A${lines}%0A%0A*Total: ${money(finalTotal)}*%0ANombre: ${name}%0ATeléfono: ${phone}%0ATipo: ${type}%0ADirección: ${address||'-'}%0APago: ${payment}`;
